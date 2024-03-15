@@ -1,0 +1,626 @@
+---
+title: "Champions_League_Attention"
+output: html_document
+date: "2024-02-17"
+---
+
+```{r setup, include=FALSE}
+#require(quanteda.corpora)
+#install.packages("stringi")
+library(ggplot2)
+
+## Install and load packages for interactive plot
+library(knitr)
+library(lubridate)
+library(xts) # used to create xts
+library(dygraphs) #for the plot
+library(zoo) #for the plot
+library(htmlwidgets) #to save the widget
+library(magrittr)
+# install.packages(c("ggplot2", "gridExtra"))
+library(ggplot2)
+library(gridExtra)
+library(xts)
+library(dplyr)
+
+
+```
+
+# The Champions-League - Attention over time
+
+In general I am working with data from MediaCloud which can be found here: https://github.com/mirihodel/Computational-Social-Sciences.git. In the github directory there are four country folders available containing data sets called "count" and "content" derived from mediacloud with the according queries distinguishing for men and women. The "count" data sets will be used to analyze the attention over time, whereas the "content" data sets will be used for the rest of the analysis. 
+
+In this specific Rmarkdown file the attention over time for the term Champions-League is analyzed for United States (USA), England (EN), Germany (GE) and Switzerland (CH) for each distinguished by men vs. women. This is being done this way in order to explore differences between countries when newspaper media talks about men vs. women Champions-League.
+
+Please adjust line 40: to your own working directory.
+```{r setup, include=FALSE}
+
+# Set working directory
+# This line must be adjusted to your own working directory
+setwd("/Users/mirjahodel/Desktop/CSS_neu")
+```
+
+## Loading the Data sets "count" per country
+
+In this chunk all data sets "count" are loaded into RStudio.
+
+```{r setup, include=FALSE}
+
+# Create a vector of file names
+file_names <- c(
+  "men_count_USA.csv", "women_count_USA.csv",
+  "men_count_EN.csv", "women_count_EN.csv",
+  "men_count_GE.csv", "women_count_GE.csv",
+  "men_count_CH.csv", "women_count_CH.csv"
+)
+
+# Loop through file names
+for (file_name in file_names) {
+  # Read the CSV file
+  file_path <- paste("Daten/count/", file_name, sep = "")
+  variable_name <- sub(".csv$", "", file_name)  # Remove the file extension
+  
+  # Assign the data frame to the corresponding variable
+  assign(variable_name, read.csv(file_path))
+
+  # Convert the 'date' column to Date format
+  assign(variable_name, transform(get(variable_name), date = as.Date(date)))
+}
+
+# Now, 'date' column in all data frames should be in Date format
+
+
+
+```
+
+
+## Descriptive Statistics
+
+First descriptive analysis to inspect the data sets.
+
+```{r, message=FALSE, results='hide'}
+
+#USA
+summary(men_count_USA)
+summary(women_count_USA)
+
+#EN
+summary(men_count_EN)
+summary(women_count_EN)
+
+#GE
+summary(men_count_GE)
+summary(women_count_GE)
+
+#CH
+summary(men_count_CH)
+summary(women_count_CH)
+
+```
+
+## Count: ggplots
+
+In this part the variable count (number of times the query appears) is being plotted for each country for men vs. women.
+
+### USA count men vs. women
+Count (number of times the query appears) for men vs. women in USA.
+
+```{r, message=FALSE, results='hide'}
+
+# Combine men_count_USA and women_count_USA data frames
+count_USA_combined <- rbind(transform(men_count_USA, gender = "Men_USA"), transform(women_count_USA, gender = "Women_USA"))
+
+# Create a ggplot for combined data in USA
+count_USA_combined_plot <- ggplot(count_USA_combined, aes(x = date, y = count, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Count Over Time for Men vs. Women in USA",
+       x = "Date",
+       y = "Count",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_USA" = "steelblue",  # Choose a color for Men
+                                "Women_USA" = "coral")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot for USA
+print(count_USA_combined_plot)
+
+# Save the plot count_USA_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/count_plots/count_USA_combined_plot.pdf", count_USA_combined_plot, width = 10, height = 6)
+
+```
+### England count men vs. women
+Count (number of times the query appears) for men vs. women in England.
+
+```{r, message=FALSE, results='hide'}
+
+# Combine men_count_EN and women_count_EN data frames
+count_EN_combined <- rbind(transform(men_count_EN, gender = "Men_EN"), transform(women_count_EN, gender = "Women_EN"))
+
+# Create a ggplot for combined data for England
+count_EN_combined_plot <- ggplot(count_EN_combined, aes(x = date, y = count, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Count Over Time for Men vs. Women in EN",
+       x = "Date",
+       y = "Count",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_EN" = "blue",  # Choose a color for Men
+                                "Women_EN" = "red")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot for England
+print(count_EN_combined_plot)
+
+# Save the plot count_EN_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/count_plots/count_EN_combined_plot.pdf", count_EN_combined_plot, width = 10, height = 6)
+
+```
+### Germany count men vs. women
+Count (number of times the query appears) for men vs. women in Germany.
+
+```{r, message=FALSE, results='hide'}
+
+# Combine men_count_GE and women_count_GE data frames
+count_GE_combined  <- rbind(transform(men_count_GE, gender = "Men_GE"), transform(women_count_GE, gender = "Women_GE"))
+
+# Create a ggplot for combined data for Germany
+count_GE_combined_plot <- ggplot(count_GE_combined , aes(x = date, y = count, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Count Over Time for Men vs. Women in GE",
+       x = "Date",
+       y = "Count",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_GE" = "green",  # Choose a color for Men
+                                "Women_GE" = "yellow")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot for Germany
+print(count_GE_combined_plot)
+
+# Save the plot count_GE_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/count_plots/count_GE_combined_plot.pdf", count_GE_combined_plot, width = 10, height = 6)
+
+```
+### Switzerland count men vs. women
+Count (number of times the query appears) for men vs. women in Switzerland.
+
+```{r, message=FALSE, results='hide'}
+
+# Combine men_count_CH and women_count_CH data frames
+count_CH_combined <- rbind(transform(men_count_CH, gender = "Men_CH"), transform(women_count_CH, gender = "Women_CH"))
+
+# Create a ggplot for combined data for Switzerland
+count_CH_combined_plot <- ggplot(count_CH_combined, aes(x = date, y = count, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Count Over Time for Men vs. Women in EN",
+       x = "Date",
+       y = "Count",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_CH" = "purple",  # Choose a color for Men
+                                "Women_CH" = "orange")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot for Switzerland
+print(count_CH_combined_plot)
+
+# Save the plot count_CH_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/count_plots/count_CH_combined_plot.pdf", count_CH_combined_plot, width = 10, height = 6)
+
+
+```
+
+
+## Ratio: ggplots
+
+In this part the ratio (ratio = count/total_count) is being plotted for each country for men vs. women.
+
+### USA ratio men vs. women
+Ratio for men vs. women in USA.
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data
+ratio_USA_combined_plot <- ggplot(count_USA_combined, aes(x = date, y = ratio, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Ratio Over Time for Men vs. Women in USA",
+       x = "Date",
+       y = "Ratio",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_USA" = "steelblue",  # Choose a color for Men
+                                "Women_USA" = "coral")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot in USA
+print(ratio_USA_combined_plot)
+
+# Save the plot count_USA_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_USA_combined_plot.pdf", ratio_USA_combined_plot, width = 10, height = 6)
+
+```
+
+### England ratio men vs. women
+Ratio for men vs. women in EN.
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data
+ratio_EN_combined_plot <- ggplot(count_EN_combined, aes(x = date, y = ratio, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Ratio Over Time for Men and Women in EN",
+       x = "Date",
+       y = "Ratio",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_EN" = "blue",  # Choose a color for Men
+                                "Women_EN" = "red")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot
+print(ratio_EN_combined_plot)
+
+# Save the plot ratio_EN_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_EN_combined_plot.pdf", ratio_EN_combined_plot, width = 10, height = 6)
+
+
+```
+### Germany ratio men vs. women
+Ratio for men vs. women in GE.
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data
+ratio_GE_combined_plot <- ggplot(count_GE_combined, aes(x = date, y = ratio, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Ratio Over Time for Men vs. Women in GE",
+       x = "Date",
+       y = "Ratio",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_GE" = "green",  # Choose a color for Men
+                                "Women_GE" = "yellow")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot
+print(ratio_GE_combined_plot)
+
+# Save the plot ratio_GE_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_GE_combined_plot.pdf", ratio_GE_combined_plot, width = 10, height = 6)
+
+```
+
+
+### Switzerland ratio men vs. women
+Ratio for men vs. women in CH.
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data
+ratio_CH_combined_plot  <- ggplot(count_CH_combined, aes(x = date, y = ratio, color = gender)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Ratio Over Time for Men and Women in CH",
+       x = "Date",
+       y = "Count",
+       color = "Gender") +
+  theme_minimal() +
+  scale_color_manual(values = c("Men_CH" = "purple",  # Choose a color for Men
+                                "Women_CH" = "orange")) +  # Choose a color for Women
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot
+print(ratio_CH_combined_plot)
+
+# Save the plot ratio_CH_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_CH_combined_plot.pdf", ratio_CH_combined_plot, width = 10, height = 6)
+
+```
+
+
+## Splines:
+
+### USA-Spline for ratio men vs. women
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data with splines for Men and Women
+ratio_spline_USA_combined_plot <- ggplot(count_USA_combined, aes(x = date, y = ratio)) +
+  geom_smooth(aes(color = gender), method = "loess", se = FALSE, linewidth = 1.2, linetype = "solid", span = 0.1) +
+  labs(title = "Smoothed Lines (Splines) Over Time for Men vs. Women in USA",
+       x = "Date",
+       y = "Ratio",
+       color = "Gender") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot with splines
+print(ratio_spline_USA_combined_plot)
+
+# Save the plot ratio_spline_USA_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_spline_USA_combined_plot.pdf", ratio_spline_USA_combined_plot, width = 10, height = 6)
+
+```
+
+
+### EN-Spline for ratio men vs. women
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data with splines for Men and Women
+ratio_spline_EN_combined_plot <- ggplot(count_EN_combined, aes(x = date, y = ratio)) +
+  geom_smooth(aes(color = gender), method = "loess", se = FALSE, linewidth = 1.2, linetype = "solid", span = 0.1) +
+  labs(title = "Smoothed Lines (Splines) Over Time for Men vs. Women in EN",
+       x = "Date",
+       y = "Ratio",
+       color = "Gender") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot with splines
+print(ratio_spline_EN_combined_plot)
+
+# Save the plot ratio_spline_EN_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_spline_EN_combined_plot.pdf", ratio_spline_EN_combined_plot, width = 10, height = 6)
+
+```
+### GE-Spline for ratio men vs. women
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data with splines for Men and Women
+ratio_spline_GE_combined_plot <- ggplot(count_GE_combined, aes(x = date, y = ratio)) +
+  geom_smooth(aes(color = gender), method = "loess", se = FALSE, linewidth = 1.2, linetype = "solid", span = 0.1) +
+  labs(title = "Smoothed Lines (Splines) Over Time for Men vs. Women in GE",
+       x = "Date",
+       y = "Ratio",
+       color = "Gender") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot with splines
+print(ratio_spline_GE_combined_plot)
+
+# Save the plot ratio_spline_GE_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_spline_GE_combined_plot.pdf", ratio_spline_GE_combined_plot, width = 10, height = 6)
+
+```
+
+
+### CH-Spline for ratio men vs. women
+
+```{r, message=FALSE, results='hide'}
+
+# Create a ggplot for combined data with splines for Men and Women
+ratio_spline_CH_combined_plot <- ggplot(count_CH_combined, aes(x = date, y = ratio)) +
+  geom_smooth(aes(color = gender), method = "loess", se = FALSE, linewidth = 1.2, linetype = "solid", span = 0.1) +
+  labs(title = "Smoothed Lines (Splines) Over Time for Men vs. Women in CH",
+       x = "Date",
+       y = "Ratio",
+       color = "Gender") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Show the combined plot with splines
+print(ratio_spline_CH_combined_plot)
+
+# Save the plot ratio_spline_GE_combined_plot.pdf
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/ratio_spline_CH_combined_plot.pdf", ratio_spline_CH_combined_plot, width = 10, height = 6)
+
+```
+
+
+```{r, message=FALSE, results='hide'}
+
+# Combine all splines into one plot
+combined_spline_plot <- ggplot() +
+  geom_smooth(data = count_USA_combined, aes(x = date, y = ratio, color = gender), method = "loess", se = FALSE, size = 1.2, linetype = "solid", span = 0.1) +
+  geom_smooth(data = count_EN_combined, aes(x = date, y = ratio, color = gender), method = "loess", se = FALSE, size = 1.2, linetype = "solid", span = 0.1) +
+  geom_smooth(data = count_GE_combined, aes(x = date, y = ratio, color = gender), method = "loess", se = FALSE, size = 1.2, linetype = "solid", span = 0.1) +
+  geom_smooth(data = count_CH_combined, aes(x = date, y = ratio, color = gender), method = "loess", se = FALSE, size = 1.2, linetype = "solid", span = 0.1) +
+  labs(title = "Smoothed Lines (Splines) Over Time for Men vs. Women",
+       x = "Date",
+       y = "Ratio",
+       color = "Country-Gender") +
+  
+  scale_color_manual(values = c("Women_USA" = "coral", "Men_USA" = "steelblue",
+                                "Women_EN" = "purple", "Men_EN" = "orange",
+                                "Women_GE" = "green", "Men_GE" = "red",
+                                "Women_CH" = "blue", "Men_CH" = "yellow")) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5)
+
+# Save the combined plot as a PDF
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/count/ratio_plots/combined_spline_plot.pdf", combined_spline_plot, width = 12, height = 8)
+
+print(combined_spline_plot)
+
+```
+
+## Interactive Plots:
+
+In this chunk interactive plots are being created to explore the data further. 
+
+
+### Interactive Plot for USA 
+```{r, message=FALSE, results='hide'}
+
+# For men
+don <- xts(x = men_count_USA$count, order.by = men_count_USA$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_men_count_USA_plot.html")
+
+
+# For women
+don <- xts(x = women_count_USA$count, order.by = women_count_USA$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_women_count_USA_plot.html")
+```
+
+### Interactive Plot for EN
+
+```{r, message=FALSE, results='hide'}
+
+# For men
+don <- xts(x = men_count_EN$count, order.by = men_count_EN$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_men_count_EN_plot.html")
+
+
+# For women
+don <- xts(x = women_count_EN$count, order.by = women_count_EN$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_women_count_EN_plot.html")
+```
+
+### Interactive Plot for GE
+
+```{r, message=FALSE, results='hide'}
+
+# For men
+don <- xts(x = men_count_GE$count, order.by = men_count_GE$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_men_count_GE_plot.html")
+
+
+# For women
+don <- xts(x = women_count_GE$count, order.by = women_count_GE$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_women_count_GE_plot.html")
+```
+
+
+### Interactive Plot for CH
+
+```{r, message=FALSE, results='hide'}
+
+# For men
+don <- xts(x = men_count_CH$count, order.by = men_count_CH$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_men_count_CH_plot.html")
+
+
+# For women
+don <- xts(x = women_count_CH$count, order.by = women_count_CH$date)
+p <- dygraph(don) %>%
+  dyOptions(
+    labelsUTC = TRUE,
+    fillGraph = TRUE,
+    fillAlpha = 0.1,
+    drawGrid = FALSE,
+    colors = "#D8AE5A",
+  ) %>%
+  dyRangeSelector() %>%
+  dyCrosshair(direction = "vertical") %>%
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+  dyRoller(rollPeriod = 1)
+
+
+saveWidget(p, file = "/Users/mirjahodel/Desktop/CSS_neu/Daten/count/interactive_plots/interactive_women_count_CH_plot.html")
+```
+

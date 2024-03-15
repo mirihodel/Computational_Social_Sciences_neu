@@ -1,0 +1,2243 @@
+---
+title: "Champions_League_Content"
+output: html_document
+date: "2024-02-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r setup, include=FALSE}
+#require(quanteda.corpora)
+#install.packages("stringi")
+library(ggplot2)
+## Install and load packages for interactive plot
+library(knitr)
+library(lubridate)
+library(xts) # used to create xts
+library(dygraphs) #for the plot
+library(zoo) #for the plot
+library(htmlwidgets) #to save the widget
+library(magrittr)
+# install.packages(c("ggplot2", "gridExtra"))
+library(ggplot2)
+library(gridExtra)
+library(xts)
+library(dplyr)
+library(quanteda)
+library(stringi)
+library(quanteda.textstats)
+#install.packages("quanteda.textplots")
+library(quanteda.textplots)
+# für die Textanalyse
+library(stopwords)
+library(tidytext)
+library(scales)
+# für die Data Prep
+library(tidyverse)
+#library(Hmisc)
+#library(corrplot)
+
+library(tm)
+library(data.table) 
+library(ggplot2)
+
+```
+
+# The Champions-League - Preprocessing Content Data
+
+In general I am working with data from MediaCloud which can be found here: https://github.com/mirihodel/Computational-Social-Sciences.git. In the github directory there are four country folders available containing data sets called "count" and "content" derived from mediacloud with the according queries distinguishing for men and women. The "count" data sets will be used to analyze the attention over time, whereas the "content" data sets will be used for the rest of the analysis. 
+
+In this specific Rmarkdown file the "content" data is preprocessed to use it for further analysis.
+
+Please adjust to your own working directory.
+```{r setup, include=FALSE}
+
+# Set working directory
+# This line must be adjusted to your own working directory
+setwd("/Users/mirjahodel/Desktop/CSS_neu")
+```
+
+## Loading the Data sets "count" per country
+
+In this chunk all data sets "count" are loaded into RStudio.
+
+```{r setup, include=FALSE}
+
+# Create a vector of file names
+file_names <- c(
+  "men_content_USA.csv", "women_content_USA.csv",
+  "men_content_EN.csv", "women_content_EN.csv",
+  "men_content_GE.csv", "women_content_GE.csv",
+  "men_content_CH.csv", "women_content_CH.csv"
+)
+
+# Loop through file names
+for (file_name in file_names) {
+  # Read the CSV file
+  file_path <- paste("Daten/content/", file_name, sep = "")
+  variable_name <- sub(".csv$", "", file_name)  # Remove the file extension
+  
+  # Assign the data frame to the corresponding variable
+  assign(variable_name, read.csv(file_path))
+}
+
+# Now, 'date' column in all data frames should be in Date format
+
+```
+
+
+## Descriptive Statistics
+
+First descriptive analysis to inspect the data sets.
+
+```{r, message=FALSE, results='hide'}
+
+#USA
+summary(men_content_USA)
+summary(women_content_USA)
+
+#EN
+summary(men_content_EN)
+summary(women_content_EN)
+
+#GE
+summary(men_content_GE)
+summary(women_content_GE)
+
+#CH
+summary(men_content_CH)
+summary(women_content_CH)
+
+```
+
+
+## Data cleaning for content of each country for men vs.women
+
+In this chunk the date is being modified to be recognized as date-structure and special characters are removed for each country.
+
+### USA
+```{r, message=FALSE, results='hide'}
+
+# Men
+men_content_USA$publish_date <-as.Date(men_content_USA$publish_date) #for publish_date
+men_content_USA$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(men_content_USA$title, "Latin-ASCII")))
+#summary(men_content_USA)
+
+
+# Women
+women_content_USA$publish_date <-as.Date(women_content_USA$publish_date) #for publish_date
+women_content_USA$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(women_content_USA$title, "Latin-ASCII")))
+#summary(women_content_USA)
+
+```
+
+### EN
+```{r, message=FALSE, results='hide'}
+
+# Men
+men_content_EN$publish_date <-as.Date(men_content_EN$publish_date) #for publish_date
+men_content_EN$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(men_content_EN$title, "Latin-ASCII")))
+
+#summary(men_content_EN)
+
+
+# Women
+women_content_EN$publish_date <-as.Date(women_content_EN$publish_date) #for publish_date
+women_content_EN$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(women_content_EN$title, "Latin-ASCII")))
+#summary(women_content_EN)
+
+```
+
+
+### German
+```{r, message=FALSE, results='hide'}
+
+# Men
+men_content_GE$publish_date <-as.Date(men_content_GE$publish_date) #for publish_date
+men_content_GE$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(men_content_GE$title, "Latin-ASCII")))
+
+#summary(men_content_GE)
+
+
+# Women
+women_content_GE$publish_date <-as.Date(women_content_GE$publish_date) #for publish_date
+women_content_GE$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(women_content_GE$title, "Latin-ASCII")))
+#summary(women_content_GE)
+
+```
+
+### Switzerland
+```{r, message=FALSE, results='hide'}
+
+# Men
+men_content_CH$publish_date <-as.Date(men_content_CH$publish_date) #for publish_date
+men_content_CH$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(men_content_CH$title, "Latin-ASCII")))
+
+#summary(men_content_CH)
+
+
+# Women
+women_content_CH$publish_date <-as.Date(women_content_CH$publish_date) #for publish_date
+women_content_CH$title <- gsub("\\s+", " ", gsub("[\\[\\]\"-»«<>]", "", stri_trans_general(women_content_CH$title, "Latin-ASCII")))
+#summary(women_content_CH)
+
+```
+
+## Corpus Building 
+
+Moreover, a corpus is constructed for both men's and women's content for every country. A corpus is a structured collection of texts, and in this context, it is created to facilitate text analysis and natural language processing tasks. The corpus includes text data from the "title" column after undergoing necessary cleaning processes, such as converting dates to a recognized date structure, removing special characters, and formatting the text. The resulting corpus allows for efficient handling and analysis of textual information, enabling various text mining and linguistic analyses.
+
+### USA
+```{r, message=FALSE, results='hide'}
+
+# Men
+m_USA_df<-men_content_USA
+#remove rows where there are duplicates in the 'title' column
+m_USA_df<-m_USA_df[!duplicated(m_USA_df[c('title')]), ]
+men_USA<-setDT(m_USA_df[m_USA_df$language == 'en', ])
+
+corpus_men_USA <- iconv(men_USA$title)
+str(corpus_men_USA)
+corpus_men_USA <- Corpus(VectorSource(corpus_men_USA))
+corpus_men_USA <- tm_map(corpus_men_USA, removePunctuation)
+corpus_men_USA <- tm_map(corpus_men_USA, removeNumbers)
+# English
+cleansetc_men_content_USA<- tm_map(corpus_men_USA, removeWords, c(stopwords("english")))
+
+
+
+# Women
+w_USA_df<-women_content_USA
+#remove rows where there are duplicates in the 'title' column
+w_USA_df<-w_USA_df[!duplicated(w_USA_df[c('title')]), ]
+women_USA<-setDT(w_USA_df[w_USA_df$language == 'en', ])
+
+corpus_women_USA <- iconv(women_USA$title)
+str(corpus_women_USA)
+corpus_women_USA <- Corpus(VectorSource(corpus_women_USA))
+corpus_women_USA <- tm_map(corpus_women_USA, removePunctuation)
+corpus_women_USA <- tm_map(corpus_women_USA, removeNumbers)
+# English
+cleansetc_women_content_USA<- tm_map(corpus_women_USA, removeWords, c(stopwords("english")))
+
+```
+### EN
+```{r, message=FALSE, results='hide'}
+
+## Men
+
+m_EN_df<-men_content_EN
+#remove rows where there are duplicates in the 'title' column
+m_EN_df<-m_EN_df[!duplicated(m_EN_df[c('title')]), ]
+men_EN<-setDT(m_EN_df[m_EN_df$language == 'en', ])
+
+corpus_men_EN <- iconv(men_EN$title)
+str(corpus_men_EN)
+corpus_men_EN <- Corpus(VectorSource(corpus_men_EN))
+corpus_men_EN <- tm_map(corpus_men_EN, removePunctuation)
+corpus_men_EN <- tm_map(corpus_men_EN, removeNumbers)
+# English
+cleansetc_men_content_EN<- tm_map(corpus_men_EN, removeWords, c(stopwords("english")))
+
+
+
+# Women
+w_EN_df<-women_content_EN
+#remove rows where there are duplicates in the 'title' column
+w_EN_df<-w_EN_df[!duplicated(w_EN_df[c('title')]), ]
+women_EN<-setDT(w_EN_df[w_EN_df$language == 'en', ])
+
+corpus_women_EN <- iconv(women_EN$title)
+str(corpus_women_EN)
+corpus_women_EN <- Corpus(VectorSource(corpus_women_EN))
+corpus_women_EN <- tm_map(corpus_women_EN, removePunctuation)
+corpus_women_EN <- tm_map(corpus_women_EN, removeNumbers)
+# English
+cleansetc_women_content_EN<- tm_map(corpus_women_EN, removeWords, c(stopwords("english")))
+
+```
+### Germany
+```{r, message=FALSE, results='hide'}
+
+## Men
+
+m_GE_df<-men_content_GE
+#remove rows where there are duplicates in the 'title' column
+m_GE_df<-m_GE_df[!duplicated(m_GE_df[c('title')]), ]
+men_GE<-setDT(m_GE_df[m_GE_df$language == 'de', ])
+
+
+corpus_men_GE <- iconv(men_GE$title)
+str(corpus_men_GE)
+corpus_men_GE <- Corpus(VectorSource(corpus_men_GE))
+corpus_men_GE <- tm_map(corpus_men_GE, removePunctuation)
+corpus_men_GE <- tm_map(corpus_men_GE, removeNumbers)
+# German
+cleansetc_men_content_GE<- tm_map(corpus_men_GE, removeWords, c(stopwords("german")))
+
+
+
+# Women
+w_GE_df<-women_content_GE
+#remove rows where there are duplicates in the 'title' column
+w_GE_df<-w_GE_df[!duplicated(w_GE_df[c('title')]), ]
+women_GE<-setDT(w_GE_df[w_GE_df$language == 'de', ])
+
+corpus_women_GE <- iconv(women_GE$title)
+str(corpus_women_GE)
+corpus_women_GE <- Corpus(VectorSource(corpus_women_GE))
+corpus_women_GE <- tm_map(corpus_women_GE, removePunctuation)
+corpus_women_GE <- tm_map(corpus_women_GE, removeNumbers)
+# German
+cleansetc_women_content_GE<- tm_map(corpus_women_GE, removeWords, c(stopwords("german")))
+```
+### Switzerland
+```{r, message=FALSE, results='hide'}
+
+## Men
+
+m_CH_df<-men_content_CH
+#remove rows where there are duplicates in 'title' column
+m_CH_df<-m_CH_df[!duplicated(m_CH_df[c('title')]), ]
+men_CH<-setDT(m_CH_df[m_CH_df$language == 'de', ])
+
+
+corpus_men_CH <- iconv(men_CH$title)
+str(corpus_men_CH)
+corpus_men_CH <- Corpus(VectorSource(corpus_men_CH))
+corpus_men_CH <- tm_map(corpus_men_CH, removePunctuation)
+corpus_men_CH <- tm_map(corpus_men_CH, removeNumbers)
+# German
+cleansetc_men_content_CH<- tm_map(corpus_men_CH, removeWords, c(stopwords("german")))
+
+
+
+# Women
+
+w_CH_df<-women_content_CH
+#remove rows where there are duplicates in 'title' column
+w_CH_df<-w_GE_df[!duplicated(w_CH_df[c('title')]), ]
+women_CH<-setDT(w_CH_df[w_CH_df$language == 'de', ])
+
+corpus_women_CH <- iconv(women_CH$title)
+str(corpus_women_CH)
+corpus_women_CH <- Corpus(VectorSource(corpus_women_CH))
+corpus_women_CH <- tm_map(corpus_women_CH, removePunctuation)
+corpus_women_CH <- tm_map(corpus_women_CH, removeNumbers)
+# German
+cleansetc_women_content_CH<- tm_map(corpus_women_CH, removeWords, c(stopwords("german")))
+```
+
+
+##Creating Wordclouds
+
+#### USA
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+# Men
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_men_content_USA <- tm_map(cleansetc_men_content_USA, content_transformer(removeURL))
+inspect(cleansetc_men_content_USA[1:5])
+
+cleansetc_men_content_USA<- tm_map(cleansetc_men_content_USA, removeWords, c('aapl', 'apple'))
+cleansetc_men_content_USA <- tm_map(cleansetc_men_content_USA, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_men_content_USA <- tm_map(cleansetc_men_content_USA, stemDocument)
+cleansetc_men_content_USA<- tm_map(cleansetc_men_content_USA, stripWhitespace)
+inspect(cleansetc_men_content_USA[1:5])
+
+tdm_men_content_USA <- TermDocumentMatrix(cleansetc_men_content_USA)
+tdm_men_content_USA  <- as.matrix(tdm_men_content_USA )
+tdm_men_content_USA [1:10, 1:20]
+
+m_men_content_USA  <- rowSums(tdm_men_content_USA )
+m_men_content_USA  <- subset(m_men_content_USA , m_men_content_USA >=25)
+barplot(m_men_content_USA ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+m_men_content_USA <- sort(rowSums(tdm_men_content_USA), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud_men_USA<-wordcloud(words = names(m_men_content_USA),
+          freq = m_men_content_USA,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_men_USA.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+
+wordcloud(words = names(m_men_content_USA),
+          freq = m_men_content_USA,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+#install.packages("webshot2")
+library(webshot2)
+library(wordcloud2)
+library(wordcloud2)
+library(htmltools)
+library(webshot)
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+m_men_content_USA <- data.frame(names(m_men_content_USA), m_men_content_USA)
+m_men_content_USA<-subset(m_men_content_USA, names.m_men_content_USA.!="–" & m_men_content_USA>200)
+colnames(m_men_content_USA) <- c('word', 'freq')
+wordcloud2(m_men_content_USA,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+
+
+
+# Women
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_women_content_USA <- tm_map(cleansetc_women_content_USA, content_transformer(removeURL))
+inspect(cleansetc_women_content_USA[1:5])
+
+cleansetc_women_content_USA<- tm_map(cleansetc_women_content_USA, removeWords, c('aapl', 'apple'))
+cleansetc_women_content_USA <- tm_map(cleansetc_women_content_USA, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_women_content_USA <- tm_map(cleansetc_women_content_USA, stemDocument)
+cleansetc_women_content_USA<- tm_map(cleansetc_women_content_USA, stripWhitespace)
+inspect(cleansetc_women_content_USA[1:5])
+
+tdm_women_content_USA <- TermDocumentMatrix(cleansetc_women_content_USA)
+tdm_women_content_USA  <- as.matrix(tdm_women_content_USA )
+tdm_women_content_USA [1:10, 1:20]
+
+w_women_content_USA  <- rowSums(tdm_women_content_USA )
+w_women_content_USA  <- subset(w_women_content_USA , w_women_content_USA >=25)
+barplot(w_women_content_USA ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+w_women_content_USA <- sort(rowSums(tdm_women_content_USA), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud_women_USA<-wordcloud(words = names(w_women_content_USA),
+          freq = w_women_content_USA,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_women_USA.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+
+wordcloud(words = names(w_women_content_USA),
+          freq = w_women_content_USA,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+
+library(wordcloud2)
+
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+w_women_content_USA <- data.frame(names(w_women_content_USA), w_women_content_USA)
+w_women_content_USA<-subset(w_women_content_USA, names.w_women_content_USA.!="–" & w_women_content_USA>100)
+colnames(w_women_content_USA) <- c('word', 'freq')
+wordcloud2(w_women_content_USA,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+
+
+
+
+
+```
+
+#### England
+
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+# Men
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_men_content_EN <- tm_map(cleansetc_men_content_EN, content_transformer(removeURL))
+inspect(cleansetc_men_content_EN[1:5])
+
+cleansetc_men_content_EN<- tm_map(cleansetc_men_content_EN, removeWords, c('aapl', 'apple'))
+cleansetc_men_content_EN <- tm_map(cleansetc_men_content_EN, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_men_content_EN <- tm_map(cleansetc_men_content_EN, stemDocument)
+cleansetc_men_content_EN<- tm_map(cleansetc_men_content_EN, stripWhitespace)
+inspect(cleansetc_men_content_EN[1:5])
+
+tdm_men_content_EN <- TermDocumentMatrix(cleansetc_men_content_EN)
+tdm_men_content_EN  <- as.matrix(tdm_men_content_EN )
+tdm_men_content_EN [1:10, 1:20]
+
+m_men_content_EN  <- rowSums(tdm_men_content_EN )
+m_men_content_EN  <- subset(m_men_content_EN , m_men_content_EN >=25)
+barplot(m_men_content_EN ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+m_men_content_EN <- sort(rowSums(tdm_men_content_EN), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud(words = names(m_men_content_EN),
+          freq = m_men_content_EN,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_men_EN.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+wordcloud(words = names(m_men_content_EN),
+          freq = m_men_content_EN,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+
+
+library(wordcloud2)
+
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+m_men_content_EN <- data.frame(names(m_men_content_EN), m_men_content_EN)
+m_men_content_EN<-subset(m_men_content_EN, names.m_men_content_EN.!="–" & m_men_content_EN>200)
+colnames(m_men_content_EN) <- c('word', 'freq')
+wordcloud2(m_men_content_EN,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+
+
+
+
+# Women
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_women_content_EN <- tm_map(cleansetc_women_content_EN, content_transformer(removeURL))
+inspect(cleansetc_women_content_EN[1:5])
+
+cleansetc_women_content_EN<- tm_map(cleansetc_women_content_EN, removeWords, c('aapl', 'apple'))
+cleansetc_women_content_EN <- tm_map(cleansetc_women_content_EN, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_women_content_EN <- tm_map(cleansetc_women_content_EN, stemDocument)
+cleansetc_women_content_EN<- tm_map(cleansetc_women_content_EN, stripWhitespace)
+inspect(cleansetc_women_content_EN[1:5])
+
+tdm_women_content_EN <- TermDocumentMatrix(cleansetc_women_content_EN)
+tdm_women_content_EN  <- as.matrix(tdm_women_content_EN )
+tdm_women_content_EN [1:10, 1:20]
+
+w_women_content_EN  <- rowSums(tdm_women_content_EN )
+w_women_content_EN  <- subset(w_women_content_EN , w_women_content_EN >=25)
+barplot(w_women_content_EN ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+w_women_content_EN <- sort(rowSums(tdm_women_content_EN), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud(words = names(w_women_content_EN),
+          freq = w_women_content_EN,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_women_EN.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+wordcloud(words = names(w_women_content_EN),
+          freq = w_women_content_EN,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+
+library(wordcloud2)
+
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+w_women_content_EN <- data.frame(names(w_women_content_EN), w_women_content_EN)
+w_women_content_EN<-subset(w_women_content_EN, names.w_women_content_EN.!="–" & w_women_content_EN>100)
+colnames(w_women_content_EN) <- c('word', 'freq')
+wordcloud2(w_women_content_EN,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+```
+
+#### Germany
+
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+# Men
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_men_content_GE <- tm_map(cleansetc_men_content_GE, content_transformer(removeURL))
+inspect(cleansetc_men_content_GE[1:5])
+
+cleansetc_men_content_GE<- tm_map(cleansetc_men_content_GE, removeWords, c('aapl', 'apple'))
+cleansetc_men_content_GE <- tm_map(cleansetc_men_content_GE, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_men_content_GE <- tm_map(cleansetc_men_content_GE, stemDocument)
+cleansetc_men_content_GE<- tm_map(cleansetc_men_content_GE, stripWhitespace)
+inspect(cleansetc_men_content_GE[1:5])
+
+tdm_men_content_GE <- TermDocumentMatrix(cleansetc_men_content_GE)
+tdm_men_content_GE  <- as.matrix(tdm_men_content_GE )
+tdm_men_content_GE [1:10, 1:20]
+
+m_men_content_GE  <- rowSums(tdm_men_content_GE )
+m_men_content_GE  <- subset(m_men_content_GE , m_men_content_GE >=25)
+barplot(m_men_content_GE ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+m_men_content_GE <- sort(rowSums(tdm_men_content_GE), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud(words = names(m_men_content_GE),
+          freq = m_men_content_GE,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_men_GE.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+wordcloud(words = names(m_men_content_GE),
+          freq = m_men_content_GE,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+library(wordcloud2)
+
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+m_men_content_GE <- data.frame(names(m_men_content_GE), m_men_content_GE)
+m_men_content_GE<-subset(m_men_content_GE, names.m_men_content_GE.!="–" & m_men_content_GE>200)
+colnames(m_men_content_GE) <- c('word', 'freq')
+wordcloud2(m_men_content_GE,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+
+
+
+
+# Women
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_women_content_GE <- tm_map(cleansetc_women_content_GE, content_transformer(removeURL))
+inspect(cleansetc_women_content_GE[1:5])
+
+cleansetc_women_content_GE<- tm_map(cleansetc_women_content_GE, removeWords, c('aapl', 'apple'))
+cleansetc_women_content_GE <- tm_map(cleansetc_women_content_GE, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_women_content_GE <- tm_map(cleansetc_women_content_GE, stemDocument)
+cleansetc_women_content_GE<- tm_map(cleansetc_women_content_GE, stripWhitespace)
+inspect(cleansetc_women_content_GE[1:5])
+
+tdm_women_content_GE <- TermDocumentMatrix(cleansetc_women_content_GE)
+tdm_women_content_GE  <- as.matrix(tdm_women_content_GE )
+tdm_women_content_GE [1:10, 1:20]
+
+w_women_content_GE  <- rowSums(tdm_women_content_GE )
+w_women_content_GE  <- subset(w_women_content_GE , w_women_content_GE >=25)
+barplot(w_women_content_GE ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+w_women_content_GE <- sort(rowSums(tdm_women_content_GE), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud(words = names(w_women_content_GE),
+          freq = w_women_content_GE,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_women_GE.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+wordcloud(words = names(w_women_content_GE),
+          freq = w_women_content_GE,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+library(wordcloud2)
+
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+w_women_content_GE <- data.frame(names(w_women_content_GE), w_women_content_GE)
+w_women_content_GE<-subset(w_women_content_GE, names.w_women_content_GE.!="–" & w_women_content_GE>100)
+colnames(w_women_content_GE) <- c('word', 'freq')
+wordcloud2(w_women_content_GE,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+
+
+
+
+```
+
+
+#### Switzerland
+
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+
+# Men
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_men_content_CH <- tm_map(cleansetc_men_content_CH, content_transformer(removeURL))
+inspect(cleansetc_men_content_CH[1:5])
+
+cleansetc_men_content_CH<- tm_map(cleansetc_men_content_CH, removeWords, c('aapl', 'apple'))
+cleansetc_men_content_CH <- tm_map(cleansetc_men_content_CH, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_men_content_CH <- tm_map(cleansetc_men_content_CH, stemDocument)
+cleansetc_men_content_CH<- tm_map(cleansetc_men_content_CH, stripWhitespace)
+inspect(cleansetc_men_content_CH[1:5])
+
+tdm_men_content_CH <- TermDocumentMatrix(cleansetc_men_content_CH)
+tdm_men_content_CH  <- as.matrix(tdm_men_content_CH )
+tdm_men_content_CH [1:10, 1:20]
+
+m_men_content_CH  <- rowSums(tdm_men_content_CH )
+m_men_content_CH  <- subset(m_men_content_CH , m_men_content_CH >=25)
+barplot(m_men_content_CH ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+m_men_content_CH <- sort(rowSums(tdm_men_content_CH), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud(words = names(m_men_content_CH),
+          freq = m_men_content_CH,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_men_CH.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+wordcloud(words = names(m_men_content_CH),
+          freq = m_men_content_CH,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+
+library(wordcloud2)
+
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+m_men_content_CH <- data.frame(names(m_men_content_CH), m_men_content_CH)
+m_men_content_CH<-subset(m_men_content_CH, names.m_men_content_CH.!="–" & m_men_content_CH>20)
+colnames(m_men_content_CH) <- c('word', 'freq')
+wordcloud2(m_men_content_CH,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+
+
+
+
+# Women
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+cleansetc_women_content_CH <- tm_map(cleansetc_women_content_CH, content_transformer(removeURL))
+inspect(cleansetc_women_content_CH[1:5])
+
+cleansetc_women_content_CH<- tm_map(cleansetc_women_content_CH, removeWords, c('aapl', 'apple'))
+cleansetc_women_content_CH <- tm_map(cleansetc_women_content_CH, gsub,
+                   pattern = 'stocks',
+                   replacement = 'stock')
+cleansetc_women_content_CH <- tm_map(cleansetc_women_content_CH, stemDocument)
+cleansetc_women_content_CH<- tm_map(cleansetc_women_content_CH, stripWhitespace)
+inspect(cleansetc_women_content_CH[1:5])
+
+tdm_women_content_CH <- TermDocumentMatrix(cleansetc_women_content_CH)
+tdm_women_content_CH  <- as.matrix(tdm_women_content_CH )
+tdm_women_content_CH [1:10, 1:20]
+
+w_women_content_CH  <- rowSums(tdm_women_content_CH )
+w_women_content_CH  <- subset(w_women_content_CH , w_women_content_CH >=25)
+barplot(w_women_content_CH ,
+        las = 2,
+        col = rainbow(50))
+
+library(wordcloud)
+w_women_content_CH <- sort(rowSums(tdm_women_content_CH), decreasing = TRUE)
+set.seed(222)
+par(mar = c(2, 2, 2, 2))
+wordcloud(words = names(w_women_content_CH),
+          freq = w_women_content_CH,
+          max.words = 150,
+          random.order = F,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+
+
+
+# Save the word cloud as a PNG file
+png("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/wordclouds/wordcloud_women_CH.jpg", width = 800, height = 400, units = "px", pointsize = 12)
+wordcloud(words = names(w_women_content_CH),
+          freq = w_women_content_CH,
+          max.words = 150,
+          random.order = FALSE,
+          min.freq = 5,
+          colors = brewer.pal(8, 'Dark2'),
+          scale = c(5, 0.3),
+          rot.per = 0.7)
+dev.off()
+
+
+
+library(wordcloud2)
+
+########################
+# change the cut-off value for the world cloud. we remove the "–"-symbol
+# depending on the data set, different cutt-off values should be chosen
+#
+w_women_content_CH <- data.frame(names(w_women_content_CH), w_women_content_CH)
+w_women_content_CH<-subset(w_women_content_CH, names.w_women_content_CH.!="–" & w_women_content_CH>20)
+colnames(w_women_content_CH) <- c('word', 'freq')
+wordcloud2(w_women_content_CH,
+           size = 0.7,
+           shape = 'triangle',
+           rotateRatio = 0.5,
+           minSize = 1)
+
+
+
+```
+
+
+
+
+## Tokenization and Text Analysis for content of each country for men vs.women
+
+Tokenizing the corpus and removing stopwords for further analysis. This process prepares the text for frequency analysis and identifying key terms.
+
+
+###USA
+```{r, message=FALSE, results='hide'}
+
+### Men
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_men_USA <- corpus(cleansetc_men_content_USA)
+tokens_men_USA <- tokens(corpus_men_USA)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_men_USA <- tokens_remove(tokens_men_USA, stopwords("en"))
+
+# Convert tokens to bigrams
+tokens_bigrams_men_USA <- tokens_ngrams(tokens_men_USA, n = 2, concatenator = "_")
+
+
+### Women
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_women_USA <- corpus(cleansetc_women_content_USA)
+tokens_women_USA <- tokens(corpus_women_USA)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_women_USA <- tokens_remove(tokens_women_USA, stopwords("en"))
+
+# Convert tokens to bigrams
+tokens_bigrams_women_USA <- tokens_ngrams(tokens_women_USA, n = 2, concatenator = "_")
+
+
+
+```
+
+### England
+
+```{r, message=FALSE, results='hide'}
+
+### Men
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_men_EN <- corpus(cleansetc_men_content_EN)
+tokens_men_EN <- tokens(corpus_men_EN)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_men_EN <- tokens_remove(tokens_men_EN, stopwords("en"))
+
+# Convert tokens to bigrams
+tokens_bigrams_men_EN <- tokens_ngrams(tokens_men_EN, n = 2, concatenator = "_")
+
+
+### Women
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_women_EN <- corpus(cleansetc_women_content_EN)
+tokens_women_EN <- tokens(corpus_women_EN)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_women_EN <- tokens_remove(tokens_women_EN, stopwords("en"))
+
+# Convert tokens to bigrams
+tokens_bigrams_women_EN <- tokens_ngrams(tokens_women_EN, n = 2, concatenator = "_")
+
+
+```
+
+
+### Germany
+
+```{r, message=FALSE, results='hide'}
+
+### Men
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_men_GE <- corpus(cleansetc_men_content_GE)
+tokens_men_GE <- tokens(corpus_men_GE)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_men_GE <- tokens_remove(tokens_men_GE, stopwords("de"))
+
+# Convert tokens to bigrams
+tokens_bigrams_men_GE <- tokens_ngrams(tokens_men_GE, n = 2, concatenator = "_")
+
+
+### Women
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_women_GE <- corpus(cleansetc_women_content_GE)
+tokens_women_GE <- tokens(corpus_women_GE)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_women_GE <- tokens_remove(tokens_women_GE, stopwords("de"))
+
+# Convert tokens to bigrams
+tokens_bigrams_women_GE <- tokens_ngrams(tokens_women_GE, n = 2, concatenator = "_")
+
+
+
+```
+
+
+### Switzerland
+```{r, message=FALSE, results='hide'}
+
+### Men
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_men_CH <- corpus(cleansetc_men_content_CH)
+tokens_men_CH <- tokens(corpus_men_CH)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_men_CH <- tokens_remove(tokens_men_CH, stopwords("de"))
+
+# Convert tokens to bigrams
+tokens_bigrams_men_CH <- tokens_ngrams(tokens_men_CH, n = 2, concatenator = "_")
+
+
+### Women
+
+# Assuming 'cleanset' is the cleaned character vector
+corpus_women_CH <- corpus(cleansetc_women_content_CH)
+tokens_women_CH <- tokens(corpus_women_CH)
+
+# Optionally, you can remove additional stopwords or perform other token manipulations as needed
+tokens_women_CH <- tokens_remove(tokens_women_CH, stopwords("de"))
+
+# Convert tokens to bigrams
+tokens_bigrams_women_CH <- tokens_ngrams(tokens_women_CH, n = 2, concatenator = "_")
+
+
+```
+
+
+## Creating a Document Feature Matrix (DFM)
+
+DFM as numerical representation of a text corpus.A DFM is a matrix where rows represent documents and columns represent features (here words) and the values are the counts of features in each document.
+
+### USA
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+# Men
+dfm_men_USA <- dfm(tokens_men_USA) 
+tstat_freq_men_USA <- textstat_frequency(dfm_men_USA, n = 100) 
+head(tstat_freq_men_USA, 100)
+
+# Women
+dfm_women_USA <- dfm(tokens_women_USA) 
+tstat_freq_women_USA <- textstat_frequency(dfm_women_USA, n = 100) 
+head(tstat_freq_women_USA, 100)
+
+```
+
+### England
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+# Men
+dfm_men_EN <- dfm(tokens_men_EN) 
+tstat_freq_men_EN <- textstat_frequency(dfm_men_EN, n = 100) 
+head(tstat_freq_men_EN, 100)
+
+# Women
+dfm_women_EN <- dfm(tokens_women_EN) 
+tstat_freq_women_EN <- textstat_frequency(dfm_women_EN, n = 100) 
+head(tstat_freq_women_EN, 100)
+
+```
+
+
+
+### Germany
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+# Men
+dfm_men_GE <- dfm(tokens_men_GE) 
+tstat_freq_men_GE <- textstat_frequency(dfm_men_GE, n = 100) 
+head(tstat_freq_men_GE, 100)
+
+# Women
+dfm_women_GE <- dfm(tokens_women_GE) 
+tstat_freq_women_GE <- textstat_frequency(dfm_women_GE, n = 100) 
+head(tstat_freq_women_GE, 100)
+
+```
+
+
+### Switzerland
+```{r, message=FALSE, results='hide', fig.show='hide'}
+
+# Men
+dfm_men_CH <- dfm(tokens_men_CH) 
+tstat_freq_men_CH <- textstat_frequency(dfm_men_CH, n = 100) 
+head(tstat_freq_men_CH, 100)
+
+# Women
+dfm_women_CH <- dfm(tokens_women_CH) 
+tstat_freq_women_CH <- textstat_frequency(dfm_women_CH, n = 100) 
+head(tstat_freq_women_CH, 100)
+
+```
+
+## Feature Co-Correlation Matrix (we work with the Content data set)
+
+
+#### USA
+```{r , message=FALSE, results='hide', fig.show='hide'}
+
+#### Men in USA
+docs_men_USA <- sapply(tokens_men_USA, as.character)
+tokens_men_USA <- tokens(docs_men_USA, remove_punct = TRUE)
+dfmat_men_USA <- dfm(tokens_men_USA, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_men_USA <- dfm_remove(dfmat_men_USA, pattern = c(stopwords("en"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_men_USA <- dfm_trim(dfmat_men_USA, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_men_USA <- fcm(dfmat_men_USA)
+
+# Select top features
+feat_men_USA <- names(topfeatures(fcmat_men_USA, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_men_USA <- fcm_select(fcmat_men_USA, pattern = feat_men_USA, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_men_USA, feat_men_USA, selection = "keep")))
+set.seed(144)
+network_plot_men_USA<-textplot_network(fcmat_select_men_USA, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_men_USA.png", plot = network_plot_men_USA, width = 10, height = 8, units = "in")
+print(network_plot_men_USA)
+
+
+#### Women in USA
+docs_women_USA <- sapply(tokens_women_USA, as.character)
+tokens_women_USA <- tokens(docs_women_USA, remove_punct = TRUE)
+dfmat_women_USA <- dfm(tokens_women_USA, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_women_USA <- dfm_remove(dfmat_women_USA, pattern = c(stopwords("en"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_women_USA <- dfm_trim(dfmat_women_USA, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_women_USA <- fcm(dfmat_women_USA)
+
+# Select top features
+feat_women_USA <- names(topfeatures(fcmat_women_USA, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_women_USA <- fcm_select(fcmat_women_USA, pattern = feat_women_USA, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_women_USA, feat_women_USA, selection = "keep")))
+set.seed(144)
+network_plot_women_USA<-textplot_network(fcmat_select_women_USA, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_women_USA.png", plot = network_plot_women_USA, width = 10, height = 8, units = "in")
+print(network_plot_women_USA)
+
+```
+
+
+#### England
+```{r , message=FALSE, results='hide', fig.show='hide'}
+
+#### Men in EN
+docs_men_EN <- sapply(tokens_men_EN, as.character)
+tokens_men_EN <- tokens(docs_men_EN, remove_punct = TRUE)
+dfmat_men_EN <- dfm(tokens_men_EN, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_men_EN <- dfm_remove(dfmat_men_EN, pattern = c(stopwords("en"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_men_EN <- dfm_trim(dfmat_men_EN, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_men_EN <- fcm(dfmat_men_EN)
+
+# Select top features
+feat_men_EN <- names(topfeatures(fcmat_men_EN, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_men_EN <- fcm_select(fcmat_men_EN, pattern = feat_men_EN, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_men_EN, feat_men_EN, selection = "keep")))
+set.seed(144)
+network_plot_men_EN<-textplot_network(fcmat_select_men_EN, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_men_EN.png", plot = network_plot_men_EN, width = 10, height = 8, units = "in")
+
+print(network_plot_men_EN)
+
+#### Women in EN
+docs_women_EN <- sapply(tokens_women_EN, as.character)
+tokens_women_EN <- tokens(docs_women_EN, remove_punct = TRUE)
+dfmat_women_EN <- dfm(tokens_women_EN, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_women_EN <- dfm_remove(dfmat_women_EN, pattern = c(stopwords("en"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_women_EN <- dfm_trim(dfmat_women_EN, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_women_EN <- fcm(dfmat_women_EN)
+
+# Select top features
+feat_women_EN <- names(topfeatures(fcmat_women_EN, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_women_EN <- fcm_select(fcmat_women_EN, pattern = feat_women_EN, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_women_EN, feat_women_EN, selection = "keep")))
+set.seed(144)
+network_plot_women_EN<-textplot_network(fcmat_select_women_EN, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_women_EN.png", plot = network_plot_women_EN, width = 10, height = 8, units = "in")
+print(network_plot_women_EN)
+
+```
+
+
+#### Germany
+```{r , message=FALSE, results='hide', fig.show='hide'}
+
+#### Men in GE
+docs_men_GE <- sapply(tokens_men_GE, as.character)
+tokens_men_GE <- tokens(docs_men_GE, remove_punct = TRUE)
+dfmat_men_GE <- dfm(tokens_men_GE, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_men_GE <- dfm_remove(dfmat_men_GE, pattern = c(stopwords("german"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_men_GE <- dfm_trim(dfmat_men_GE, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_men_GE <- fcm(dfmat_men_GE)
+
+# Select top features
+feat_men_GE <- names(topfeatures(fcmat_men_GE, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_men_GE <- fcm_select(fcmat_men_GE, pattern = feat_men_GE, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_men_GE, feat_men_GE, selection = "keep")))
+set.seed(144)
+network_plot_men_GE<-textplot_network(fcmat_select_men_GE, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_men_GE.png", plot = network_plot_men_GE, width = 10, height = 8, units = "in")
+print(network_plot_men_GE)
+
+
+
+#### Women in GE
+docs_women_GE <- sapply(tokens_women_GE, as.character)
+tokens_women_GE <- tokens(docs_women_GE, remove_punct = TRUE)
+dfmat_women_GE <- dfm(tokens_women_GE, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_women_GE <- dfm_remove(dfmat_women_GE, pattern = c(stopwords("german"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_women_GE <- dfm_trim(dfmat_women_GE, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_women_GE <- fcm(dfmat_women_GE)
+
+# Select top features
+feat_women_GE <- names(topfeatures(fcmat_women_GE, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_women_GE <- fcm_select(fcmat_women_GE, pattern = feat_women_GE, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_women_GE, feat_women_GE, selection = "keep")))
+set.seed(144)
+network_plot_women_GE<-textplot_network(fcmat_select_women_GE, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_women_GE.png", plot = network_plot_women_GE, width = 10, height = 8, units = "in")
+print(network_plot_women_GE)
+
+```
+
+
+#### Switzerland
+```{r , message=FALSE, results='hide', fig.show='hide'}
+
+#### Men in CH
+docs_men_CH <- sapply(tokens_men_CH, as.character)
+tokens_men_CH <- tokens(docs_men_CH, remove_punct = TRUE)
+dfmat_men_CH <- dfm(tokens_men_CH, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_men_CH <- dfm_remove(dfmat_men_CH, pattern = c(stopwords("german"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_men_CH <- dfm_trim(dfmat_men_CH, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_men_CH <- fcm(dfmat_men_CH)
+
+# Select top features
+feat_men_CH <- names(topfeatures(fcmat_men_CH, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_men_CH <- fcm_select(fcmat_men_CH, pattern = feat_men_CH, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_men_CH, feat_men_GE, selection = "keep")))
+set.seed(144)
+network_plot_men_CH<-textplot_network(fcmat_select_men_CH, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_men_CH.png", plot = network_plot_women_GE, width = 10, height = 8, units = "in")
+print(network_plot_men_CH)
+
+
+#### Women in USA
+docs_women_CH <- sapply(tokens_women_CH, as.character)
+tokens_women_CH <- tokens(docs_women_CH, remove_punct = TRUE)
+dfmat_women_CH <- dfm(tokens_women_CH, remove_punct = TRUE)
+
+# Remove stopwords and other specified patterns
+dfmat_women_CH <- dfm_remove(dfmat_women_CH, pattern = c(stopwords("german"), "*-time", "updated-*", "gmt", "bst"))
+
+# Trim and filter by frequency
+dfmat_women_CH <- dfm_trim(dfmat_women_CH, min_termfreq = 2)
+
+# Create a feature co-occurrence matrix
+fcmat_women_CH <- fcm(dfmat_women_CH)
+
+# Select top features
+feat_women_CH <- names(topfeatures(fcmat_women_CH, 50))
+
+# Create a subnetwork based on selected features
+fcmat_select_women_CH <- fcm_select(fcmat_women_CH, pattern = feat_women_CH, selection = "keep")
+
+# Network visualization
+size <- log(colSums(dfm_select(dfmat_women_CH, feat_women_CH, selection = "keep")))
+set.seed(144)
+network_plot_women_CH<-textplot_network(fcmat_select_women_CH, min_freq = 0.8, vertex_size = size / max(size) * 3)
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/correlation_plot_women_CH.png", plot = network_plot_women_GE, width = 10, height = 8, units = "in")
+print(network_plot_women_CH)
+
+```
+
+
+
+## Sentiment analysis: Analysing the mood of the text
+
+Example of using a sentiment analysis (webinar) 
+https://www.youtube.com/watch?v=RaN_uTe8jpg
+
+Sentiment analysis is a technique used to detect and interpret emotional tones within textual data. It allows us to quantify the subjective information in text, transforming words into insights about the feelings they express. Sentiment analysis relies on the dictionary that scores the words from positive to negative, or from angry to sad to happy etc. 
+
+
+#USA
+```{r, message=FALSE, echo=TRUE, results='hide', fig.show='hide'}
+bing_df<-get_sentiments("bing")
+
+# Men
+
+m_USA_df<-men_content_USA
+#remove rows where there are duplicates in the 'title' column
+m_USA_df<-m_USA_df[!duplicated(m_USA_df[c('title')]), ]
+men_USA<-setDT(m_USA_df[m_USA_df$language == 'en', ])
+
+stop_words_en <- bind_rows(tibble(word = stopwords("en"), lexicon = c("stopwords")))
+
+men_words_USA <- men_USA %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+men_words_USA <- men_words_USA %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_en, by = "word")
+
+
+# Sentiment Analysis
+men_sentiment_USA <- men_words_USA %>%
+  left_join(bing_df, by="word") 
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_men_sentiment_USA<-men_sentiment_USA %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(sentiment) %>%
+  ggplot(aes(x=created_at, y=n, group=sentiment, color=sentiment)) +
+  geom_line(linewidth=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, linewidth=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (men: USA)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_men_sentiment_USA.png", plot = plot1_men_sentiment_USA, width = 10, height = 8, units = "in")
+print(plot1_men_sentiment_USA)
+
+# Plot 2 - Sentiment-Wert pro Tag English
+plot2_men_sentiment_USA<-men_sentiment_USA %>%
+  drop_na() %>%
+  mutate(sentiment=case_when(sentiment=="positive"~1,sentiment=="negative"~-1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(sentiment = sum(sentiment)) %>%
+  ggplot(aes(x=publish_date, y=sentiment, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-28"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2023-08-11"), xmax = as.Date("2024-02-29"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.2) + #WM Frauen
+  geom_line(size=0.6, alpha=0.6, color="blue")+
+  geom_vline(xintercept=as.Date("2022-11-05"), color="purple", size=0.5)+ #MLS Men 22 ??
+  geom_vline(xintercept=as.Date("2022-12-18"), color="darkblue", size=0.5)+ # WM-Finale
+  geom_vline(xintercept=as.Date("2023-06-10"), color="red", size=0.5)+ #Männer Champions-League finale 22/23 Männer
+  geom_vline(xintercept=as.Date("2023-09-19"), color="red", size=0.5)+ #Männer Champions-League beginn 23/24 Männer
+  geom_smooth(span=0.2, se=FALSE)+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: men USA",
+    #subtitle = "aggregiert pro Tag",
+    caption = "Plot 2"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_men_sentiment_USA.png", plot = plot2_men_sentiment_USA, width = 10, height = 8, units = "in")
+print(plot2_men_sentiment_USA)
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar)
+plot3_men_sentiment_USA<-men_sentiment_USA %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(sentiment) %>%
+  spread(sentiment, n, fill=1) %>%
+  mutate(relation = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation, group=1)) +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (men USA)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot3_men_sentiment_USA.png", plot = plot3_men_sentiment_USA, width = 10, height = 8, units = "in")
+print(plot3_men_sentiment_USA)
+
+#Women
+w_USA_df<-women_content_USA
+#remove rows where there are duplicates in the 'title' column
+w_USA_df<-w_USA_df[!duplicated(w_USA_df[c('title')]), ]
+women_USA<-setDT(w_USA_df[w_USA_df$language == 'en', ])
+
+stop_words_en <- bind_rows(tibble(word = stopwords("en"), lexicon = c("stopwords")))
+
+women_words_USA <- women_USA %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+women_words_USA <- women_words_USA %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_en, by = "word")
+
+
+# Sentiment Analysis
+women_sentiment_USA <- women_words_USA %>%
+  left_join(bing_df, by="word") 
+
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_women_sentiment_USA<-women_sentiment_USA %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(sentiment) %>%
+  ggplot(aes(x=created_at, y=n, group=sentiment, color=sentiment)) +
+  geom_line(linewidth=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, linewidth=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (women: USA)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_women_sentiment_USA.png", plot = plot1_women_sentiment_USA, width = 10, height = 8, units = "in")
+print(plot1_women_sentiment_USA)
+
+# Plot 2 - Sentiment-Wert pro Tag English
+plot2_women_sentiment_USA<-women_sentiment_USA %>%
+  drop_na() %>%
+  mutate(sentiment=case_when(sentiment=="positive"~1,sentiment=="negative"~-1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(sentiment = sum(sentiment)) %>%
+  ggplot(aes(x=publish_date, y=sentiment, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-28"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2023-08-11"), xmax = as.Date("2024-02-29"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.3) + #WM Frauen
+  ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+
+  geom_line(size=0.6, alpha=0.6, color="blue")+
+  geom_vline(xintercept=as.Date("2023-06-03"), color="purple", size=0.5) + #NWSL Championship USA Women
+  geom_vline(xintercept=as.Date("2023-06-03"), color="red", size=0.5)+ # Champions-League finale 22/23 Frauen
+  geom_vline(xintercept=as.Date("2023-06-30"), color="red", size=0.5)+ # Champions-League start 23/24 Frauen
+  geom_smooth(span=0.2, se=FALSE)+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: women USA",
+    #subtitle = "aggregiert pro Tag",
+    caption = "Plot 2"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_women_sentiment_USA.png", plot = plot2_women_sentiment_USA, width = 10, height = 8, units = "in")
+print(plot2_women_sentiment_USA)
+
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar)
+plot3_women_sentiment_USA<-women_sentiment_USA %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(sentiment) %>%
+  spread(sentiment, n, fill=1) %>%
+  mutate(relation = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation, group=1)) +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (women USA)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot3_women_sentiment_USA.png", plot = plot3_women_sentiment_USA, width = 10, height = 8, units = "in")
+print(plot3_women_sentiment_USA)
+
+
+```
+
+
+
+#England
+```{r, message=FALSE, echo=TRUE, results='hide', fig.show='hide'}
+
+# Men
+
+m_EN_df<-men_content_EN
+#remove rows where there are duplicates in the 'title' column
+m_EN_df<-m_EN_df[!duplicated(m_EN_df[c('title')]), ]
+men_EN<-setDT(m_EN_df[m_EN_df$language == 'en', ])
+
+stop_words_en <- bind_rows(tibble(word = stopwords("en"), lexicon = c("stopwords")))
+
+men_words_EN <- men_EN %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+men_words_EN <- men_words_EN %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_en, by = "word")
+
+
+# Sentiment Analysis
+men_sentiment_EN <- men_words_EN %>%
+  left_join(bing_df, by="word") 
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_men_sentiment_EN<-men_sentiment_EN %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(sentiment) %>%
+  ggplot(aes(x=created_at, y=n, group=sentiment, color=sentiment)) +
+  geom_line(linewidth=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, linewidth=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (men: EN)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_men_sentiment_EN.png", plot = plot1_men_sentiment_EN, width = 10, height = 8, units = "in")
+print(plot1_men_sentiment_EN)
+
+
+# Plot 2 - Sentiment-Wert pro Tag English
+plot2_men_sentiment_EN<-men_sentiment_EN %>%
+  drop_na() %>%
+  mutate(sentiment=case_when(sentiment=="positive"~1,sentiment=="negative"~-1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(sentiment = sum(sentiment)) %>%
+  ggplot(aes(x=publish_date, y=sentiment, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-28"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2023-08-11"), xmax = as.Date("2024-02-29"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.3) + #WM Frauen
+  geom_line(size=0.6, alpha=0.6, color="blue")+
+  geom_vline(xintercept=as.Date("2023-06-10"), color="red", size=0.5)+ #Männer Champions-League finale 22/23 Männer
+  geom_vline(xintercept=as.Date("2023-09-19"), color="red", size=0.5)+ #Männer Champions-League beginn 23/24 Männer
+  geom_vline(xintercept=as.Date("2023-05-20"), color="red", size=0.5)+ # Manchester stand vorzeitig als Meister fest
+   geom_vline(xintercept=as.Date("2023-02-26"), color="purple", size=0.5)+ # Manchester stand vorzeitig als Meister fest 
+  geom_vline(xintercept=as.Date("2022-12-18"), color="darkblue", size=0.5)+ # WM-Finale
+  geom_vline(xintercept = as.Date("2023-08-20"), color = "red", linewidth = 0.5) + # 2023 FIFA Women's World Cup final 
+  geom_smooth(span=0.2, se=FALSE)+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: men EN",
+    #subtitle = "aggregiert pro Tag",
+    caption = "Plot 2"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_men_sentiment_EN.png", plot = plot2_men_sentiment_EN, width = 10, height = 8, units = "in")
+print(plot2_men_sentiment_EN)
+
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar)
+plot3_men_sentiment_EN<-men_sentiment_EN %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(sentiment) %>%
+  spread(sentiment, n, fill=1) %>%
+  mutate(relation = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation, group=1)) +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (men EN)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+ggsave("/Users/rolandfriedrich/Desktop/CSS_neu/Daten/content/content_plots/plot3_men_sentiment_EN.png", plot = plot3_men_sentiment_EN, width = 10, height = 8, units = "in")
+print(plot3_men_sentiment_EN)
+
+
+#Women
+
+w_EN_df<-women_content_EN
+#remove rows where there are duplicates in the 'title' column
+w_EN_df<-w_EN_df[!duplicated(w_EN_df[c('title')]), ]
+women_EN<-setDT(w_EN_df[w_EN_df$language == 'en', ])
+
+stop_words_en <- bind_rows(tibble(word = stopwords("en"), lexicon = c("stopwords")))
+
+women_words_EN <- women_EN %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+women_words_EN <- women_words_EN %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_en, by = "word")
+
+
+# Sentiment Analysis
+women_sentiment_EN <- women_words_EN %>%
+  left_join(bing_df, by="word") 
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_women_sentiment_EN<-women_sentiment_EN %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(sentiment) %>%
+  ggplot(aes(x=created_at, y=n, group=sentiment, color=sentiment)) +
+  geom_line(linewidth=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, linewidth=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (women: EN)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_women_sentiment_EN.png", plot = plot1_women_sentiment_EN, width = 10, height = 8, units = "in")
+print(plot1_women_sentiment_EN)
+
+# Plot 2 - Sentiment-Wert pro Tag English
+plot2_women_sentiment_EN <- women_sentiment_EN %>%
+  drop_na() %>%
+  mutate(sentiment = case_when(sentiment == "positive" ~ 1, sentiment == "negative" ~ -1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(sentiment = sum(sentiment)) %>%
+  ggplot(aes(x = publish_date, y = sentiment, group = 1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-28"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2023-08-11"), xmax = as.Date("2024-02-29"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.3) + #WM Frauen
+  geom_line(size = 0.6, alpha = 0.6, color = "blue") +
+  geom_vline(xintercept = as.Date("2023-04-23"), color = "purple", size = 0.5) + #2022–23 FA Women's National League Cup
+  geom_vline(xintercept = as.Date("2023-06-03"), color = "red", size = 0.5) + # Champions-League finale 22/23 Frauen
+  geom_vline(xintercept = as.Date("2023-06-30"), color = "red", size = 0.5) + # Champions-League start 23/24 Frauen
+  geom_vline(xintercept = as.Date("2023-08-20"), color = "red", linewidth = 0.5) + # 2023 FIFA Women's World Cup final 
+  geom_smooth(span = 0.2, se = FALSE) +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: women EN",
+    #subtitle = "aggregiert pro Tag",
+    caption = "Plot 2"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_women_sentiment_EN.png", plot = plot2_women_sentiment_EN, width = 10, height = 8, units = "in")
+print(plot2_women_sentiment_EN)
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar)
+plot3_women_sentiment_EN<-women_sentiment_EN %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(sentiment) %>%
+  spread(sentiment, n, fill=1) %>%
+  mutate(relation = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (women EN)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot3_women_sentiment_EN.png", plot = plot3_women_sentiment_EN, width = 10, height = 8, units = "in")
+print(plot3_women_sentiment_EN)
+```
+
+#Germany
+
+```{r, message=FALSE, echo=TRUE, results='hide', fig.show='hide'}
+SentiWS_df<-read.csv("/Users/mirjahodel/Desktop/CSS_neu/data_SentiWS.csv", header = T)
+
+# Men
+
+m_DE_df<-men_content_GE
+#remove rows where there are duplicates in the 'title' column
+m_DE_df<-m_DE_df[!duplicated(m_DE_df[c('title')]), ]
+men_DE<-setDT(m_DE_df[m_DE_df$language == 'de', ])
+
+stop_words_de <- bind_rows(tibble(word = stopwords("de"), lexicon = c("stopwords")))
+
+men_words <- men_DE %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+men_words_DE <- men_words %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_de, by = "word")
+
+
+#Sentiment Analyse
+men_sentiment_DE <- men_words_DE %>%
+  left_join(SentiWS_df, by="word") 
+
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_men_sentiment_GE<-men_sentiment_DE %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(Polarität) %>%
+  ggplot(aes(x=created_at, y=n, group=Polarität, color=Polarität)) +
+  geom_line(size=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, size=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (women: DE)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_men_sentiment_GE.png", plot = plot1_men_sentiment_GE, width = 10, height = 8, units = "in")
+print(plot1_men_sentiment_GE)
+
+
+#Plot 2
+plot2_men_sentiment_GE<-men_sentiment_DE %>%
+  drop_na() %>%
+  mutate(Polarität=case_when(Polarität=="positive"~1,Polarität=="negative"~-1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(Polarität = sum(Polarität)) %>%
+  ggplot(aes(x=publish_date, y=Polarität, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-27"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2023-08-18"), xmax = as.Date("2024-03-15"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+ ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.3) + #WM Frauen
+  geom_line(size=0.6, alpha=0.6, color="blue")+
+  geom_vline(xintercept=as.Date("2023-06-10"), color="red", size=0.5)+ #Männer Champions-League finale 22/23 Männer
+  geom_vline(xintercept=as.Date("2023-09-19"), color="red", size=0.5)+ #Männer Champions-League beginn 23/24 Männer
+   geom_vline(xintercept=as.Date("2023-06-03"), color="purple", size=0.5)+ #  finale Meisterschaft deutschland männer
+  geom_vline(xintercept=as.Date("2022-12-18"), color="darkblue", size=0.5)+ # WM-Finale
+  geom_smooth(span=0.2, se=FALSE)+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: men DE",
+    #subtitle = "aggregiert pro Tag",
+    caption = "Plot 2"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_men_sentiment_GE.png", plot = plot2_men_sentiment_GE, width = 10, height = 8, units = "in")
+print(plot2_men_sentiment_GE)
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar)
+plot3_men_sentiment_GE<-men_sentiment_DE %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(Polarität) %>%
+  spread(Polarität, n, fill=1) %>%
+  mutate(relation_m = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation_m, group=1)) +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (men DE)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot3_men_sentiment_GE.png", plot = plot3_men_sentiment_GE, width = 10, height = 8, units = "in")
+print(plot3_men_sentiment_GE)
+
+
+
+
+# Women
+
+w_DE_df<-women_content_GE
+#remove rows where there are duplicates in the 'title' column
+w_DE_df<-w_DE_df[!duplicated(w_DE_df[c('title')]), ]
+women_DE<-setDT(w_DE_df[w_DE_df$language == 'de', ])
+
+stop_words_de <- bind_rows(tibble(word = stopwords("de"), lexicon = c("stopwords")))
+
+women_words <- women_DE %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+women_words_DE <- women_words %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_de, by = "word")
+
+
+#Sentiment Analyse
+women_sentiment_DE <- women_words_DE %>%
+  left_join(SentiWS_df, by="word") 
+
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_women_sentiment_GE<-women_sentiment_DE %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(Polarität) %>%
+  ggplot(aes(x=created_at, y=n, group=Polarität, color=Polarität)) +
+  geom_line(size=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, size=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (women: DE)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_women_sentiment_GE.png", plot = plot1_women_sentiment_GE, width = 10, height = 8, units = "in")
+print(plot1_women_sentiment_GE)
+
+
+#Plot 2
+plot2_women_sentiment_GE<-women_sentiment_DE %>%
+  drop_na() %>%
+  mutate(Polarität=case_when(Polarität=="positive"~1,Polarität=="negative"~-1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(Polarität = sum(Polarität)) %>%
+  ggplot(aes(x=publish_date, y=Polarität, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-27"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.3) + #WM Frauen
+  geom_line(size = 0.6, alpha = 0.6, color = "blue") +
+  geom_vline(xintercept = as.Date("2023-08-20"), color = "purple", size = 0.5) + 
+  geom_vline(xintercept = as.Date("2023-06-03"), color = "red", size = 0.5) + # Champions-League finale 22/23 Frauen
+  geom_vline(xintercept = as.Date("2023-06-30"), color = "red", size = 0.5) + # Champions-League start 23/24 Frauen
+  geom_smooth(span=0.2, se=FALSE)+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: women DE",
+    #subtitle = "aggregated per day",
+    caption = "Plot 2"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_women_sentiment_GE.png", plot = plot2_women_sentiment_GE, width = 10, height = 8, units = "in")
+print(plot2_women_sentiment_GE)
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar)
+plot = plot3_women_sentiment_GE<-women_sentiment_DE %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(Polarität) %>%
+  spread(Polarität, n, fill=1) %>%
+  mutate(relation_w = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation_w, group=1)) +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (women DE)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot3_women_sentiment_GE.png", plot = plot3_women_sentiment_GE, width = 10, height = 8, units = "in")
+print(plot3_women_sentiment_GE)
+
+
+
+```
+# Switzerland
+
+```{r, message=FALSE, echo=TRUE, results='hide', fig.show='hide'}
+
+# Men
+
+m_CH_df<-men_content_CH
+#remove rows where there are duplicates in the 'title' column
+m_CH_df<-m_CH_df[!duplicated(m_CH_df[c('title')]), ]
+men_CH<-setDT(m_CH_df[m_CH_df$language == 'de', ])
+
+stop_words_de <- bind_rows(tibble(word = stopwords("de"), lexicon = c("stopwords")))
+
+men_words <- men_CH %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+men_words_CH <- men_words %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_de, by = "word")
+
+
+#Sentiment Analyse
+men_sentiment_CH <- men_words_CH %>%
+  left_join(SentiWS_df, by="word") 
+
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_men_sentiment_CH<-men_sentiment_CH %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(Polarität) %>%
+  ggplot(aes(x=created_at, y=n, group=Polarität, color=Polarität)) +
+  geom_line(size=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, size=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (women: CH)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_men_sentiment_CH.png", plot = plot1_men_sentiment_CH, width = 10, height = 8, units = "in")
+print(plot1_men_sentiment_CH)
+
+
+#Plot 2
+plot2_men_sentiment_CH<-men_sentiment_CH %>%
+  drop_na() %>%
+  mutate(Polarität=case_when(Polarität=="positive"~1,Polarität=="negative"~-1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(Polarität = sum(Polarität)) %>%
+  ggplot(aes(x=publish_date, y=Polarität, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-27"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) + # Super League 2022/23 (Schweiz)
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-22"), xmax = as.Date("2024-04-27"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) + # Super League 2023/24 (Schweiz)
+  ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.3) + #WM Frauen
+  geom_line(size=0.6, alpha=0.6, color="blue")+
+  geom_vline(xintercept=as.Date("2023-06-10"), color="red", size=0.5)+ #Männer Champions-League finale 22/23 Männer
+  geom_vline(xintercept=as.Date("2023-09-19"), color="red", size=0.5)+ #Männer Champions-League beginn 23/24 Männer
+   geom_vline(xintercept=as.Date("2023-05-29"), color="purple", size=0.5)+ #  finale Super league männer
+  geom_vline(xintercept=as.Date("2022-12-18"), color="darkblue", size=0.5)+ # WM-Finale
+  geom_smooth(span=0.2, se=FALSE)+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: men CH",
+    #subtitle = "aggregiert pro Tag",
+    caption = "Plot 2"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_men_sentiment_CH.png", plot = plot2_men_sentiment_CH, width = 10, height = 8, units = "in")
+print(plot2_men_sentiment_CH)
+
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar)
+plot3_men_sentiment_CH<-men_sentiment_CH %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(Polarität) %>%
+  spread(Polarität, n, fill=1) %>%
+  mutate(relation = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation, group=1)) +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (men CH)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot3_men_sentiment_CH.png", plot = plot3_men_sentiment_CH, width = 10, height = 8, units = "in")
+print(plot3_men_sentiment_CH)
+
+
+
+
+# Women
+
+w_CH_df<-women_content_CH
+#remove rows where there are duplicates in the 'title' column
+w_CH_df<-w_CH_df[!duplicated(w_CH_df[c('title')]), ]
+women_CH<-setDT(w_CH_df[w_CH_df$language == 'de', ])
+
+stop_words_de <- bind_rows(tibble(word = stopwords("de"), lexicon = c("stopwords")))
+
+women_words <- women_CH %>%
+  mutate(row_number = row_number())%>%
+  select(row_number, title, publish_date)%>%
+  as_tibble() %>%
+  mutate(text = str_replace_all(title, "[^\x01-\x7F]", ""),
+         text = str_replace_all(title, "\\.|[[:digit:]]+", ""),
+         text = str_replace_all(title, "https|amp|t.co", ""),
+         text = gsub("http.*","", title),
+         text = gsub("https.*","", title),
+         text = str_replace_all(title,"&amp;|&lt;|&gt;", ""))
+women_words_CH <- women_words %>%  
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words_de, by = "word")
+
+
+#Sentiment Analyse
+women_sentiment_CH <- women_words_CH %>%
+  left_join(SentiWS_df, by="word") 
+
+
+# Plot1 - Anzahl positiver & negativer Wörter pro Tag
+plot1_women_sentiment_CH<-women_sentiment_CH %>%
+  drop_na() %>%
+  mutate("created_at" = as.Date(publish_date)) %>%
+  group_by(created_at) %>%
+  count(Polarität) %>%
+  ggplot(aes(x=created_at, y=n, group=Polarität, color=Polarität)) +
+  geom_line(size=0.6, alpha=0.6)+
+  geom_smooth(span=0.2, se=FALSE, size=0.8)+
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Number pos. & neg. words (women: CH)",
+    subtitle = "aggregated per day",
+    caption = "Plot 1"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot1_women_sentiment_CH.png", plot = plot1_women_sentiment_CH, width = 10, height = 8, units = "in")
+print(plot1_women_sentiment_CH)
+
+#Plot 2
+plot2_women_sentiment_CH<-women_sentiment_CH %>%
+  drop_na() %>%
+  mutate(Polarität=case_when(Polarität=="positive"~1,Polarität=="negative"~-1)) %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  summarise(Polarität = sum(Polarität)) %>%
+  ggplot(aes(x=publish_date, y=Polarität, group=1)) +
+  scale_x_date(labels = date_format("%y/%m"), date_breaks = "3 month") +
+  ggplot2::annotate("rect", xmin = as.Date("2022-08-05"), xmax = as.Date("2023-05-27"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) +
+  ggplot2::annotate("rect", xmin = as.Date("2023-08-26"), xmax = as.Date("2024-04-13"), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.2) + # AXA CH-Women’s Super League Saison 2023/24 
+   ggplot2::annotate("rect", xmin = as.Date("2022-11-20"), xmax = as.Date("2022-12-18"), ymin = -Inf, ymax = Inf, fill = "lightblue", alpha = 0.3) + #WM Männer
+  ggplot2::annotate("rect", xmin = as.Date("2023-07-20"), xmax = as.Date("2023-08-20"), ymin = -Inf, ymax = Inf, fill = "pink", alpha = 0.3) + #WM Frauen
+  geom_line(size = 0.6, alpha = 0.6, color = "blue") +
+  geom_vline(xintercept = as.Date("2023-06-23"), color = "purple", size = 0.5) + #frauenmeisterschaft schweiz
+  geom_vline(xintercept = as.Date("2023-06-03"), color = "red", size = 0.5) + # Champions-League finale 22/23 Frauen
+  geom_vline(xintercept = as.Date("2023-06-30"), color = "red", size = 0.5) + # Champions-League start 23/24 Frauen
+  geom_smooth(span=0.2, se=FALSE)+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Net daily sentiment value: women CH",
+    #subtitle = "aggregated per day",
+    caption = "Plot 2"
+  )
+
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot2_women_sentiment_CH.png", plot = plot2_women_sentiment_CH, width = 10, height = 8, units = "in")
+print(plot2_women_sentiment_CH)
+
+# Plot3 - Verhältnis positiver zu negativen Wörtern pro Tag (wird vergleichbar) #ERSETZEN MIT AUS FILE
+plot3_women_sentiment_CH<-women_sentiment_CH %>%
+  drop_na() %>%
+  mutate("publish_date" = as.Date(publish_date)) %>%
+  group_by(publish_date) %>%
+  count(Polarität) %>%
+  spread(Polarität, n, fill=1) %>%
+  mutate(relation = positive/negative) %>%
+  ggplot(aes(x=publish_date, y=relation, group=1)) +
+  geom_line(size=1, color="#004C99")+
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL,
+    title = "Ratio of positive to negative words (women CH)",
+    subtitle = "aggregated per day",
+    caption = "Plot 3"
+  )
+
+ggsave("/Users/mirjahodel/Desktop/CSS_neu/Daten/content/content_plots/plot3_women_sentiment_CH.png", plot = plot3_women_sentiment_CH, width = 10, height = 8, units = "in")
+print(plot3_women_sentiment_CH)
+```
+
+
